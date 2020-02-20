@@ -1,0 +1,14 @@
+version: '3'
+services:
+    db:
+        image: postgres:latest
+        environment: 
+            - POSTGRES_PASSWORD
+    server:
+        build: .
+        ports:
+            - "3000:3000"
+        links:
+            - db
+        environment: 
+            - PORT=3000
