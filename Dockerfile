@@ -13,7 +13,7 @@ WORKDIR /workspace/backend
 RUN go build -o server --ldflags "-w -s" main.go
 
 # execution environment
-FROM golang:alpine
+FROM alpine:latest
 WORKDIR /server
 COPY --from=backendbuilder /workspace/backend/server /server/server
 COPY --from=frontendbuilder /workspace/frontend/build/ /server/static/
