@@ -1,14 +1,33 @@
 version: '3'
 services:
+    migrate:
+        image: migrate/migrate
+        command: -path=/migrations/ -database postgres://postgres:aboringdistopia@db:5432/openkahn?sslmode=disable up
+        links: 
+            - db
+        depends_on: 
+            - db
+        restart: on-failure
+        volumes: 
+            - "./backend/dbmigrations/:/migrations/"
     db:
         image: postgres:latest
+        restart: unless-stopped
         environment: 
-            - POSTGRES_PASSWORD
+            - POSTGRES_PASSWORD=aboringdistopia
+            - POSTGRES_DB=openkahn
+        ports:
+            - "5432:5432"
     server:
         build: .
         ports:
             - "3000:3000"
+        depends_on:
+            - db
+            - migrate
         links:
             - db
+        restart: unless-stopped
         environment: 
+            - DBCONNSTRING=host=db port=5432 user=postgres password=aboringdistopia dbname=postgres connect_timeout=30 sslmode=disable
             - PORT=3000

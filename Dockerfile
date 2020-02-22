@@ -10,7 +10,7 @@ FROM golang:alpine as backendbuilder
 WORKDIR /workspace
 COPY ./backend/ backend/
 WORKDIR /workspace/backend
-RUN go build -o server --ldflags "-w -s" main.go
+RUN go build -o server --ldflags "-w -s"
 
 # execution environment
 FROM alpine:latest
