@@ -1,22 +1,34 @@
 package main
 
 import (
+	"convention.ninja/auth"
 	"convention.ninja/users"
 	"database/sql"
 	"fmt"
+	"github.com/gorilla/mux"
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
 	"github.com/ilyakaznacheev/cleanenv"
 	_ "github.com/lib/pq"
+	"golang.org/x/oauth2/facebook"
+	"golang.org/x/oauth2/google"
 	"log"
 	"net/http"
 	"time"
 )
 
 type ServerConfig struct {
-	ServerPort   int    `env:"PORT" env-default:"3000" env-description:"The port to run the HTTP server on"`
+	// HTTP configs
+	ServerPort int `env:"PORT" env-default:"3000" env-description:"The port to run the HTTP server on"`
+	BaseUri string `env:"BASEURI" env-default:"http://localhost:3000" env-description:"The base url to use for oauth redirection"`
+	// Database configs
 	DbConnString string `env:"DBCONNSTRING" env-description:"The connection string for database"`
 	DbMaxConn    int    `env:"DBMAXCONN" env-default:"5" env-description:"The maximum number of pooled database connections"`
+	// OAUTH configs
+	GoogleClientId       string `env:"GOOGLECLIENTID" env-description:"Your google oauth client id"`
+	GoogleClientSecret   string `env:"GOOGLECLIENTSECRET" env-description:"Your google oauth client secret"`
+	FacebookClientId     string `env:"FACEBOOKCLIENTID" env-description:"Your facebook oauth client id"`
+	FacebookClientSecret string `env:"FACEBOOKCLIENTSECRET" env-description:"Your facebook oauth client secret"`
 }
 
 func main() {
@@ -78,14 +90,9 @@ func main() {
 		Extensions:   nil,
 	})
 
-	srv := &http.Server{
-		Addr: fmt.Sprintf(":%d", config.ServerPort),
-		// Good practice: enforce timeouts for servers you create!
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
-	}
+	router := mux.NewRouter()
 
-	http.Handle("/graphql/", handler.New(&handler.Config{
+	router.Handle("/graphql", handler.New(&handler.Config{
 		Schema:           &schema,
 		Pretty:           true,
 		GraphiQL:         true,
@@ -95,8 +102,36 @@ func main() {
 		FormatErrorFn:    nil,
 	}))
 
+	var authController auth.AuthController
+	authController.AddProvider(auth.AuthProvider{
+		Name:         "google",
+		ClientID:     config.GoogleClientId,
+		ClientSecret: config.GoogleClientSecret,
+		Scopes: []string{
+			"profile",
+			"email",
+		},
+	}, google.Endpoint).AddProvider(auth.AuthProvider{
+		Name:         "facebook",
+		ClientID:     config.FacebookClientId,
+		ClientSecret: config.FacebookClientSecret,
+		Scopes: []string{
+			"name",
+			"email",
+		},
+	}, facebook.Endpoint)
+
+	router.PathPrefix("/auth/{provider}").Handler(&authController)
 	staticFs := RedirectingFileSystem{http.Dir("static")}
-	http.Handle("/", http.FileServer(staticFs))
+	router.PathPrefix("/").Handler(http.FileServer(staticFs))
+
+	srv := &http.Server{
+		Handler: router,
+		Addr:    fmt.Sprintf(":%d", config.ServerPort),
+		// Good practice: enforce timeouts for servers you create!
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+	}
 
 	log.Print("Starting HTTP server")
 	log.Fatal(srv.ListenAndServe())

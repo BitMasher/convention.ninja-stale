@@ -30,4 +30,10 @@ services:
         restart: unless-stopped
         environment: 
             - DBCONNSTRING=host=db port=5432 user=postgres password=aboringdistopia dbname=postgres connect_timeout=30 sslmode=disable
+            - DBMAXCONN=20
+            - BASEURI=http://localhost:3000
             - PORT=3000
+            - GOOGLECLIENTID
+            - GOOGLECLIENTSECRET
+            - FACEBOOKCLIENTID
+            - FACEBOOKCLIENTSECRET
