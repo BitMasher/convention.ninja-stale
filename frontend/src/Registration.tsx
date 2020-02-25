@@ -157,7 +157,7 @@ function Registration() {
 						</form>
 					</CardContent>
 					<CardActions>
-						<Fab color="primary" className={classes.save} aria-label="Save">
+						<Fab disabled={submitResult.loading} color="primary" className={classes.save} aria-label="Save">
 							<Icon className={saveIcon}/>
 						</Fab>
 					</CardActions>

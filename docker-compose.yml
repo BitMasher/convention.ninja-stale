@@ -14,7 +14,7 @@ services:
         image: postgres:latest
         restart: unless-stopped
         environment: 
-            - POSTGRES_PASSWORD=aboringdistopia
+            - POSTGRES_PASSWORD
             - POSTGRES_DB=openkahn
         ports:
             - "5432:5432"
@@ -29,10 +29,10 @@ services:
             - db
         restart: unless-stopped
         environment: 
-            - DBCONNSTRING=host=db port=5432 user=postgres password=aboringdistopia dbname=postgres connect_timeout=30 sslmode=disable
-            - DBMAXCONN=20
-            - BASEURI=http://localhost:3000
-            - PORT=3000
+            - DBCONNSTRING
+            - DBMAXCONN
+            - BASEURI
+            - PORT
             - GOOGLECLIENTID
             - GOOGLECLIENTSECRET
             - FACEBOOKCLIENTID

@@ -2,6 +2,8 @@ package main
 
 import (
 	"convention.ninja/auth"
+	facebookFetch "convention.ninja/auth/facebook"
+	googleFetch "convention.ninja/auth/google"
 	"convention.ninja/users"
 	"database/sql"
 	"fmt"
@@ -19,8 +21,8 @@ import (
 
 type ServerConfig struct {
 	// HTTP configs
-	ServerPort int `env:"PORT" env-default:"3000" env-description:"The port to run the HTTP server on"`
-	BaseUri string `env:"BASEURI" env-default:"http://localhost:3000" env-description:"The base url to use for oauth redirection"`
+	ServerPort int    `env:"PORT" env-default:"3000" env-description:"The port to run the HTTP server on"`
+	BaseUri    string `env:"BASEURI" env-default:"http://localhost:3000" env-description:"The base url to use for oauth redirection"`
 	// Database configs
 	DbConnString string `env:"DBCONNSTRING" env-description:"The connection string for database"`
 	DbMaxConn    int    `env:"DBMAXCONN" env-default:"5" env-description:"The maximum number of pooled database connections"`
@@ -65,7 +67,8 @@ func main() {
 		panic("Failed to connect to database")
 	}
 
-	userGql := users.GetSchema(users.Controller{Repo: users.Repo{DB: db}})
+	userController := users.Controller{Repo: users.Repo{DB: db}}
+	userGql := users.GetSchema(userController)
 
 	// TODO: create me resolver
 	rootQuery := graphql.NewObject(graphql.ObjectConfig{
@@ -102,8 +105,11 @@ func main() {
 		FormatErrorFn:    nil,
 	}))
 
-	var authController auth.AuthController
-	authController.AddProvider(auth.AuthProvider{
+	authController := auth.Controller{
+		BaseUri: config.BaseUri,
+		Validator: userController.GetUserByOauth,
+	}
+	authController.AddProvider(auth.Provider{
 		Name:         "google",
 		ClientID:     config.GoogleClientId,
 		ClientSecret: config.GoogleClientSecret,
@@ -111,14 +117,16 @@ func main() {
 			"profile",
 			"email",
 		},
-	}, google.Endpoint).AddProvider(auth.AuthProvider{
+		Profile: googleFetch.FetchProfile,
+	}, google.Endpoint).AddProvider(auth.Provider{
 		Name:         "facebook",
 		ClientID:     config.FacebookClientId,
 		ClientSecret: config.FacebookClientSecret,
 		Scopes: []string{
-			"name",
 			"email",
+			"public_profile",
 		},
+		Profile: facebookFetch.FetchProfile,
 	}, facebook.Endpoint)
 
 	router.PathPrefix("/auth/{provider}").Handler(&authController)
