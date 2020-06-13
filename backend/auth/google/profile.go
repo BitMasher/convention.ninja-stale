@@ -9,10 +9,10 @@ import (
 )
 
 type googleProfile struct {
-	Id string `json:"sub"`
-	Email string `json:"email"`
-	EmailVerified bool `json:"email_verified"`
-	Name string `json:"name"`
+	Id            string `json:"sub"`
+	Email         string `json:"email"`
+	EmailVerified bool   `json:"email_verified"`
+	Name          string `json:"name"`
 }
 
 func FetchProfile(client *http.Client) (*auth.OauthProfile, error) {
@@ -26,15 +26,6 @@ func FetchProfile(client *http.Client) (*auth.OauthProfile, error) {
 		return nil, err
 	}
 
-	/*
-	{
-	"sub": "account id",
-	"name": "full name",
-	"email": "email",
-	"email_verified": true,
-	}
-	*/
-	// TODO: parse into unified profile object
 	var profile googleProfile
 	err = json.Unmarshal(buff, &profile)
 	if err != nil {

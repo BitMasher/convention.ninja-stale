@@ -5,6 +5,9 @@ import (
 	"convention.ninja/auth"
 	"database/sql"
 	"errors"
+	"fmt"
+	"github.com/gbrlsnchs/jwt"
+	"strings"
 	"time"
 )
 
@@ -13,6 +16,17 @@ type User struct {
 	DisplayName string
 	Name        string
 	Dob         time.Time
+}
+
+func (u *User) GetId() string {
+	return u.Id
+}
+
+func (u *User) GetDisplayName() string {
+	if len(u.DisplayName) > 0 {
+		return u.DisplayName
+	}
+	return u.Name
 }
 
 type Controller struct {
@@ -56,6 +70,24 @@ func (c *Controller) GetUser(ctx context.Context, id string) (*User, error) {
 			return nil, nil
 		}
 		return nil, err
+	}
+	return &User{
+		Id:          dbUser.Id,
+		DisplayName: dbUser.DisplayName,
+		Name:        dbUser.Name,
+		Dob:         dbUser.Dob,
+	}, nil
+}
+
+func (c *Controller) Register(ctx context.Context, name string, displayName string, dob *time.Time, token *jwt.JWT) (*User, error) {
+	// TODO: do a better name validation check
+	if len(strings.Trim(name, " \r\n\t")) == 0 {
+		return nil, errors.New("name is a required field")
+	}
+	dbUser, err := c.Repo.RegisterOauthUser(ctx, token.Public()["prov"].(string), token.Subject(), name, dob, token.Public()["email"].(string), displayName)
+	if err != nil {
+		fmt.Print(err)
+		return nil, errors.New("failed to register user, please try again")
 	}
 	return &User{
 		Id:          dbUser.Id,
