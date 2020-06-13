@@ -15,6 +15,7 @@ import {useMutation} from "@apollo/react-hooks";
 import {GraphQLError} from "graphql";
 import clsx from "clsx";
 import {createBrowserHistory} from "history"
+import Cookies from "js-cookie";
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
 	container: {
@@ -58,17 +59,30 @@ mutation UserRegister($details: UserRegistration) {
 function Registration() {
 	const classes = useStyles();
 
+	const regToken = Cookies.get('token');
+	let payload: any = {};
+	if (regToken) {
+		const [, payloadb64,] = regToken.split('.');
+		payload = JSON.parse(window.atob(payloadb64));
+	}
+
+	const [dobValue, setDobValue] = React.useState<Date | null>(new Date());
+	const [nameValue, setNameValue] = React.useState<String>(payload.name || '');
+	const [displayNameValue, setDisplayNameValue] = React.useState<String>('');
+	const [jwt, setJwt] = React.useState<any>(payload);
+
 	const [submitRegistration, submitResult] = useMutation(SUBMIT_REGISTRATION, {
 		onCompleted: (data) => {
-			if(data?.users?.register?.id) {
+			if (data?.users?.register?.id) {
 				history.push('/')
 			}
 		}
 	});
 
-	const [dobValue, setDobValue] = React.useState<Date | null>(new Date());
-	const [nameValue, setNameValue] = React.useState<String>('');
-	const [displayNameValue, setDisplayNameValue] = React.useState<String>('');
+	if (regToken === undefined || payload.aud !== "reg") {
+		history.push('/login');
+		return <div>No register token found</div>;
+	}
 
 	const saveIcon = clsx({
 		'fas': true,
@@ -119,9 +133,21 @@ function Registration() {
 							});
 						}}>
 							<TextField
+								disabled
+								defaultValue={jwt.email}
+								label="Email"
+								margin="normal" fullWidth
+								InputProps={{
+									startAdornment: (
+										<InputAdornment position="start"><Icon className="fas fa-at"/></InputAdornment>
+									)
+								}}/>
+							<TextField
 								error={!submitResult.loading && hasNameError(submitResult.error?.graphQLErrors).length > 0}
 								helperText={!submitResult.loading ? hasNameError(submitResult.error?.graphQLErrors) : ''}
-								onChange={(e) => setNameValue(e.target.value)} margin="normal" fullWidth required
+								defaultValue={jwt.name}
+								onChange={(e) => setNameValue(e.target.value)}
+								margin="normal" fullWidth required
 								id="registration-name" label="Name" InputProps={{
 								startAdornment: (
 									<InputAdornment position="start"><Icon className="fas fa-user"/></InputAdornment>
@@ -157,7 +183,19 @@ function Registration() {
 						</form>
 					</CardContent>
 					<CardActions>
-						<Fab disabled={submitResult.loading} color="primary" className={classes.save} aria-label="Save">
+						<Fab disabled={submitResult.loading} color="primary" className={classes.save} aria-label="Save"
+						     onClick={async (e) => {
+							     e.preventDefault();
+							     await submitRegistration({
+								     variables: {
+									     details: {
+										     name: nameValue,
+										     displayName: displayNameValue,
+										     dob: dobValue
+									     }
+								     }
+							     });
+						     }}>
 							<Icon className={saveIcon}/>
 						</Fab>
 					</CardActions>
