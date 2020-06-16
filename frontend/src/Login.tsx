@@ -9,6 +9,7 @@ import ListItemText from "@material-ui/core/ListItemText";
 import Icon from "@material-ui/core/Icon";
 import Container from "@material-ui/core/Container";
 import CardHeader from "@material-ui/core/CardHeader";
+import {useLocation} from "react-router-dom";
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
 	container: {
@@ -41,21 +42,39 @@ function ListItemLink(props: ListItemProps<'a', { button?: true }>) {
 function Login() {
 	const classes = useStyles();
 
+	const location = useLocation<{ registration?: boolean, provider?: string }>();
+
+	let regConfirm = "Login";
+	if (location.state?.registration ?? false) {
+		regConfirm = "Registration successful!";
+	}
+
+	let authProviders = [];
+	if (!location.state?.registration || location.state?.provider === 'google') {
+		authProviders.push(
+			<ListItemLink href="/auth/google">
+				<ListItemIcon><Icon className="fab fa-google"/></ListItemIcon>
+				<ListItemText>Sign in with Google</ListItemText>
+			</ListItemLink>
+		);
+	}
+	if (!location.state?.registration || location.state?.provider === 'facebook') {
+		authProviders.push(
+			<ListItemLink href="/auth/facebook">
+				<ListItemIcon><Icon className="fab fa-facebook"/></ListItemIcon>
+				<ListItemText>Sign in with Facebook</ListItemText>
+			</ListItemLink>
+		);
+	}
+
 	return (
 		<div className={classes.root}>
 			<Container className={classes.container}>
 				<Card className={classes.card} elevation={4}>
-					<CardHeader className={classes.cardHeader} title="Login"/>
+					<CardHeader className={classes.cardHeader} title={regConfirm}/>
 					<CardContent>
 						<List component="nav" aria-label="google facebook">
-							<ListItemLink href="/auth/google">
-								<ListItemIcon><Icon className="fab fa-google"/></ListItemIcon>
-								<ListItemText>Sign in with Google</ListItemText>
-							</ListItemLink>
-							<ListItemLink href="/auth/facebook">
-								<ListItemIcon><Icon className="fab fa-facebook"/></ListItemIcon>
-								<ListItemText>Sign in with Facebook</ListItemText>
-							</ListItemLink>
+							{authProviders}
 						</List>
 					</CardContent>
 				</Card>

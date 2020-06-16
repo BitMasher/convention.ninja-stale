@@ -25,14 +25,6 @@ func FetchProfile(client *http.Client) (*auth.OauthProfile, error) {
 		return nil, err
 	}
 
-	/*
-		{
-		"name": "account name",
-		"email": "account email",
-		"id":"account id"
-		}
-	*/
-	// TODO: parse into unified profile object
 	var profile facebookProfile
 	err = json.Unmarshal(buff, &profile)
 	if err != nil {

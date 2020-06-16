@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"convention.ninja/auth"
 	facebookFetch "convention.ninja/auth/facebook"
 	googleFetch "convention.ninja/auth/google"
@@ -31,6 +32,15 @@ type ServerConfig struct {
 	GoogleClientSecret   string `env:"GOOGLECLIENTSECRET" env-description:"Your google oauth client secret"`
 	FacebookClientId     string `env:"FACEBOOKCLIENTID" env-description:"Your facebook oauth client id"`
 	FacebookClientSecret string `env:"FACEBOOKCLIENTSECRET" env-description:"Your facebook oauth client secret"`
+	// JWT configs
+	TokenSigningKey string `env:"TOKENSIGNINGKEY" env-description:"Your token signing key"`
+}
+
+func populateTokenMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r = r.WithContext(context.WithValue(r.Context(), "token", auth.GetToken(r)))
+		next.ServeHTTP(w, r)
+	})
 }
 
 func main() {
@@ -68,45 +78,54 @@ func main() {
 	}
 
 	userController := users.Controller{Repo: users.Repo{DB: db}}
-	userGql := users.GetSchema(userController)
+	userQueryGql := users.GetQuery(userController)
+	userMutationGql := users.GetMutation(userController)
 
 	// TODO: create me resolver
 	rootQuery := graphql.NewObject(graphql.ObjectConfig{
 		Name: "RootQuery",
 		Fields: graphql.Fields{
 			"users": &graphql.Field{
-				Type:        userGql,
+				Type:        userQueryGql,
 				Description: "The user api",
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return userGql, nil
+					return userQueryGql, nil
+				},
+			},
+		},
+	})
+
+	rootMutation := graphql.NewObject(graphql.ObjectConfig{
+		Name: "RootMutation",
+		Fields: graphql.Fields{
+			"users": &graphql.Field{
+				Type:        userMutationGql,
+				Description: "The user api",
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return userMutationGql, nil
 				},
 			},
 		},
 	})
 
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
-		Query:        rootQuery,
-		Mutation:     nil,
-		Subscription: nil,
-		Types:        nil,
-		Directives:   nil,
-		Extensions:   nil,
+		Query:    rootQuery,
+		Mutation: rootMutation,
 	})
 
 	router := mux.NewRouter()
 
-	router.Handle("/graphql", handler.New(&handler.Config{
-		Schema:           &schema,
-		Pretty:           true,
-		GraphiQL:         true,
-		Playground:       true,
-		RootObjectFn:     nil,
-		ResultCallbackFn: nil,
-		FormatErrorFn:    nil,
-	}))
+	router.Handle("/graphql", populateTokenMiddleware(handler.New(&handler.Config{
+		Schema:     &schema,
+		Pretty:     true,
+		GraphiQL:   true,
+		Playground: true,
+	})))
+
+	auth.JwtSigningKey = config.TokenSigningKey
 
 	authController := auth.Controller{
-		BaseUri: config.BaseUri,
+		BaseUri:   config.BaseUri,
 		Validator: userController.GetUserByOauth,
 	}
 	authController.AddProvider(auth.Provider{
