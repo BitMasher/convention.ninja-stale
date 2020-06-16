@@ -1,3 +1,3 @@
-DROP TABLE user_oauth_provider;
+DROP TABLE user_oauth_providers;
 
 DROP TABLE users;

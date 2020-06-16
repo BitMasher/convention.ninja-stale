@@ -1,6 +1,9 @@
 package users
 
-import "github.com/graphql-go/graphql"
+import (
+	"errors"
+	"github.com/graphql-go/graphql"
+)
 
 func GetSchema(controller Controller) *graphql.Object {
 
@@ -13,9 +16,7 @@ func GetSchema(controller Controller) *graphql.Object {
 				Type: graphql.ID,
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					if user, ok := p.Source.(DbUser); ok {
-						return User{
-							user.Id,
-						}, nil
+						return user.Id, nil
 					}
 					return nil, nil
 				},
@@ -33,7 +34,7 @@ func GetSchema(controller Controller) *graphql.Object {
 				Description: "Gets the list of active users",
 				Type:        graphql.NewList(userType),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return controller.GetActiveUsers(p.Context)
+					return controller.GetUsers(p.Context)
 				},
 			},
 			"user": &graphql.Field{
@@ -47,7 +48,10 @@ func GetSchema(controller Controller) *graphql.Object {
 					},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return controller.GetUser(p.Context, p.Args["id"].(string))
+
+					return nil, errors.New("invalid id supplied")
+
+					//return controller.GetUser(p.Context, p.Args["id"].(string))
 				},
 			},
 		},
