@@ -123,14 +123,49 @@ func (c *Controller) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								})
 								http.Redirect(w, r, "/register", http.StatusTemporaryRedirect)
 								return
+							} else {
+								http.Redirect(w, r, "/login#error", http.StatusTemporaryRedirect)
+								return
 							}
-							log.Println(err)
 						} else {
 							if authUser, ok := ret.(AuthUser); ok {
+								// TODO: handle successful login
 								fmt.Printf("Got user %s, %s\n", authUser.GetId(), authUser.GetDisplayName())
+								jwtOpts := &jwt.Options{
+									JWTID:          ksuid.New().String(),
+									Timestamp:      true,
+									ExpirationTime: time.Now().Add(time.Hour * 5),
+									Subject:        authUser.GetId(),
+									Audience:       "api",
+									Issuer:         "api",
+									KeyID:          "1",
+									Public: map[string]interface{}{
+										"displayName": authUser.GetDisplayName(),
+									},
+								}
+								sig := jwt.HS512(JwtSigningKey)
+								signedToken, err := jwt.Sign(sig, jwtOpts)
+								if err != nil {
+									// TODO: do something with this error
+									log.Println(err)
+									http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+									return
+								}
+								http.SetCookie(w, &http.Cookie{
+									Name:     "token",
+									Value:    signedToken,
+									MaxAge:   3600,
+									Path:     "/",
+									Secure:   false,
+									HttpOnly: false,
+									SameSite: http.SameSiteStrictMode,
+								})
+								http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+								return
+							} else {
+								http.Redirect(w, r, "/login#error", http.StatusTemporaryRedirect)
+								return
 							}
-							// TODO: handle successful login
-							http.Redirect(w, r, "/login#loginsuccess", http.StatusTemporaryRedirect)
 						}
 					}
 					panic(errors.New("no validator configured"))

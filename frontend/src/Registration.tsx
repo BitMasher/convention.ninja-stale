@@ -14,8 +14,8 @@ import {gql} from "apollo-boost";
 import {useMutation} from "@apollo/react-hooks";
 import {GraphQLError} from "graphql";
 import clsx from "clsx";
-import {createBrowserHistory} from "history"
 import Cookies from "js-cookie";
+import {useHistory} from "react-router-dom";
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
 	container: {
@@ -44,8 +44,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 	}
 }));
 
-const history = createBrowserHistory();
-
 const SUBMIT_REGISTRATION = gql`
 mutation UserRegister($details: UserRegistration) {
 	users {
@@ -60,21 +58,36 @@ function Registration() {
 	const classes = useStyles();
 
 	const regToken = Cookies.get('token');
-	let payload: any = {};
+	let payload: { name?: string, aud?: string } = {};
 	if (regToken) {
 		const [, payloadb64,] = regToken.split('.');
 		payload = JSON.parse(window.atob(payloadb64));
 	}
 
+	let name = (payload.name?.split(' ') ?? ['', ''])
+	let firstName = name.shift() ?? '';
+	let lastName = name.join(' ') ?? '';
+
 	const [dobValue, setDobValue] = React.useState<Date | null>(new Date());
-	const [nameValue, setNameValue] = React.useState<String>(payload.name || '');
-	const [displayNameValue, setDisplayNameValue] = React.useState<String>('');
+	const [firstNameValue, setFirstNameValue] = React.useState<string>(firstName);
+	const [lastNameValue, setLastNameValue] = React.useState<string>(lastName);
+	const [displayNameValue, setDisplayNameValue] = React.useState<string>('');
+	const [tokenFirstName] = React.useState<string>(firstName);
+	const [tokenLastName] = React.useState<string>(lastName);
 	const [jwt, setJwt] = React.useState<any>(payload);
+
+	const history = useHistory<{registration?: boolean, provider?: string}>();
 
 	const [submitRegistration, submitResult] = useMutation(SUBMIT_REGISTRATION, {
 		onCompleted: (data) => {
 			if (data?.users?.register?.id) {
-				history.push('/')
+				history.push({
+					pathname: '/login',
+					state: {
+						registration: true,
+						provider: jwt['prov']
+					}
+				})
 			}
 		}
 	});
@@ -90,12 +103,20 @@ function Registration() {
 		'fa-save': !submitResult.loading
 	});
 
-	function hasNameError(gqlErrors: ReadonlyArray<GraphQLError> | undefined): string {
+	function hasFirstNameError(gqlErrors: ReadonlyArray<GraphQLError> | undefined): string {
 		if (!gqlErrors) {
 			return '';
 		}
 
-		return gqlErrors.find(e => e.message.startsWith('nameError:'))?.message || '';
+		return gqlErrors.find(e => e.message.startsWith('firstNameError:'))?.message || '';
+	}
+
+	function hasLastNameError(gqlErrors: ReadonlyArray<GraphQLError> | undefined): string {
+		if (!gqlErrors) {
+			return '';
+		}
+
+		return gqlErrors.find(e => e.message.startsWith('lastNameError:'))?.message || '';
 	}
 
 	function hasDisplayNameError(gqlErrors: ReadonlyArray<GraphQLError> | undefined): string {
@@ -125,7 +146,8 @@ function Registration() {
 							await submitRegistration({
 								variables: {
 									details: {
-										name: nameValue,
+										firstName: firstNameValue,
+										lastName: lastNameValue,
 										displayName: displayNameValue,
 										dob: dobValue
 									}
@@ -143,12 +165,23 @@ function Registration() {
 									)
 								}}/>
 							<TextField
-								error={!submitResult.loading && hasNameError(submitResult.error?.graphQLErrors).length > 0}
-								helperText={!submitResult.loading ? hasNameError(submitResult.error?.graphQLErrors) : ''}
-								defaultValue={jwt.name}
-								onChange={(e) => setNameValue(e.target.value)}
+								error={!submitResult.loading && hasFirstNameError(submitResult.error?.graphQLErrors).length > 0}
+								helperText={!submitResult.loading ? hasFirstNameError(submitResult.error?.graphQLErrors) : ''}
+								defaultValue={tokenFirstName}
+								onChange={(e) => setFirstNameValue(e.target.value)}
 								margin="normal" fullWidth required
-								id="registration-name" label="Name" InputProps={{
+								id="registration-name" label="First Name" InputProps={{
+								startAdornment: (
+									<InputAdornment position="start"><Icon className="fas fa-user"/></InputAdornment>
+								)
+							}}/>
+							<TextField
+								error={!submitResult.loading && hasLastNameError(submitResult.error?.graphQLErrors).length > 0}
+								helperText={!submitResult.loading ? hasLastNameError(submitResult.error?.graphQLErrors) : ''}
+								defaultValue={tokenLastName}
+								onChange={(e) => setLastNameValue(e.target.value)}
+								margin="normal" fullWidth
+								id="registration-name" label="Last Name" InputProps={{
 								startAdornment: (
 									<InputAdornment position="start"><Icon className="fas fa-user"/></InputAdornment>
 								)
@@ -168,7 +201,8 @@ function Registration() {
 								error={!submitResult.loading && hasDobError(submitResult.error?.graphQLErrors).length > 0}
 								helperText={!submitResult.loading ? hasDobError(submitResult.error?.graphQLErrors) : ''}
 								required
-								disableToolbar
+								autoOk
+								disableFuture
 								variant="inline"
 								format="yyyy-MM-dd"
 								margin="normal"
@@ -189,7 +223,8 @@ function Registration() {
 							     await submitRegistration({
 								     variables: {
 									     details: {
-										     name: nameValue,
+										     firstName: firstNameValue,
+										     lastName: lastNameValue,
 										     displayName: displayNameValue,
 										     dob: dobValue
 									     }

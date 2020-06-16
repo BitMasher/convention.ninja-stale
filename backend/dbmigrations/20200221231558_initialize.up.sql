@@ -1,9 +1,10 @@
 CREATE TABLE users
 (
-    id           varchar(27) NOT NULL,
-    display_name varchar(32) NULL,
-    "name"       varchar(64) NULL,
-    dob          date        NULL,
+    id           varchar(27)  NOT NULL,
+    display_name varchar(32)  NULL,
+    first_name   varchar(128) NULL,
+    last_name    varchar(128) NULL,
+    dob          date         NULL,
     CONSTRAINT users_pk PRIMARY KEY (id)
 );
 

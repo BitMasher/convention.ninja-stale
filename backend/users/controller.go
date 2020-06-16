@@ -12,10 +12,11 @@ import (
 )
 
 type User struct {
-	Id          string
-	DisplayName string
-	Name        string
-	Dob         time.Time
+	Id          string    `json:"id"`
+	DisplayName string    `json:"displayName"`
+	FirstName   string    `json:"firstName"`
+	LastName    string    `json:"lastName"`
+	Dob         time.Time `json:"dob"`
 }
 
 func (u *User) GetId() string {
@@ -26,7 +27,10 @@ func (u *User) GetDisplayName() string {
 	if len(u.DisplayName) > 0 {
 		return u.DisplayName
 	}
-	return u.Name
+	if len(u.LastName) > 0 {
+		return u.FirstName + " " + string([]rune(u.LastName)[0]) + "."
+	}
+	return u.FirstName
 }
 
 type Controller struct {
@@ -41,7 +45,8 @@ func (c *Controller) GetUserByOauth(ctx context.Context, profile *auth.OauthProf
 	return &User{
 		Id:          dbUser.Id,
 		DisplayName: dbUser.DisplayName,
-		Name:        dbUser.Name,
+		FirstName:   dbUser.FirstName,
+		LastName:    dbUser.LastName,
 		Dob:         dbUser.Dob,
 	}, nil
 }
@@ -56,7 +61,8 @@ func (c *Controller) GetUsers(ctx context.Context) ([]User, error) {
 		users[i] = User{
 			Id:          dbUsers[i].Id,
 			DisplayName: dbUsers[i].DisplayName,
-			Name:        dbUsers[i].Name,
+			FirstName:   dbUsers[i].FirstName,
+			LastName:    dbUsers[i].LastName,
 			Dob:         dbUsers[i].Dob,
 		}
 	}
@@ -74,17 +80,19 @@ func (c *Controller) GetUser(ctx context.Context, id string) (*User, error) {
 	return &User{
 		Id:          dbUser.Id,
 		DisplayName: dbUser.DisplayName,
-		Name:        dbUser.Name,
+		FirstName:   dbUser.FirstName,
+		LastName:    dbUser.LastName,
 		Dob:         dbUser.Dob,
 	}, nil
 }
 
-func (c *Controller) Register(ctx context.Context, name string, displayName string, dob *time.Time, token *jwt.JWT) (*User, error) {
+func (c *Controller) Register(ctx context.Context, firstName string, lastName string, displayName string, dob *time.Time, token *jwt.JWT) (*User, error) {
 	// TODO: do a better name validation check
-	if len(strings.Trim(name, " \r\n\t")) == 0 {
+	// TODO: block restricted names such as admin?
+	if len(strings.Trim(firstName, " \r\n\t")) == 0 {
 		return nil, errors.New("name is a required field")
 	}
-	dbUser, err := c.Repo.RegisterOauthUser(ctx, token.Public()["prov"].(string), token.Subject(), name, dob, token.Public()["email"].(string), displayName)
+	dbUser, err := c.Repo.RegisterOauthUser(ctx, token.Public()["prov"].(string), token.Subject(), firstName, lastName, dob, token.Public()["email"].(string), displayName)
 	if err != nil {
 		fmt.Print(err)
 		return nil, errors.New("failed to register user, please try again")
@@ -92,7 +100,8 @@ func (c *Controller) Register(ctx context.Context, name string, displayName stri
 	return &User{
 		Id:          dbUser.Id,
 		DisplayName: dbUser.DisplayName,
-		Name:        dbUser.Name,
+		FirstName:   dbUser.FirstName,
+		LastName:    dbUser.LastName,
 		Dob:         dbUser.Dob,
 	}, nil
 }

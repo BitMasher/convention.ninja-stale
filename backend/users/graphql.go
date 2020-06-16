@@ -3,8 +3,8 @@ package users
 import (
 	"convention.ninja/auth"
 	"errors"
-	"fmt"
 	"github.com/graphql-go/graphql"
+	"strings"
 	"time"
 )
 
@@ -13,15 +13,20 @@ var userType = graphql.NewObject(graphql.ObjectConfig{
 	Description: "A registered user",
 	Fields: graphql.Fields{
 		"id": &graphql.Field{
-			Name: "id",
-			Type: graphql.ID,
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				if user, ok := p.Source.(DbUser); ok {
-					return user.Id, nil
-				}
-				return nil, nil
-			},
+			Type:        graphql.ID,
 			Description: "The users unique id",
+		},
+		"firstName": &graphql.Field{
+			Type: graphql.String,
+		},
+		"lastName": &graphql.Field{
+			Type: graphql.String,
+		},
+		"displayName": &graphql.Field{
+			Type: graphql.String,
+		},
+		"dob": &graphql.Field{
+			Type: graphql.DateTime,
 		},
 	},
 })
@@ -30,16 +35,20 @@ var registrationDetailsType = graphql.NewInputObject(graphql.InputObjectConfig{
 	Name:        "UserRegistration",
 	Description: "The details for user registration",
 	Fields: graphql.InputObjectConfigFieldMap{
-		"name": &graphql.InputObjectFieldConfig{
+		"firstName": &graphql.InputObjectFieldConfig{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "The new users first name",
+		},
+		"lastName": &graphql.InputObjectFieldConfig{
 			Type:        graphql.String,
-			Description: "The new users name",
+			Description: "The new users last name (optional)",
 		},
 		"displayName": &graphql.InputObjectFieldConfig{
 			Type:        graphql.String,
-			Description: "The users display name",
+			Description: "The users display name (optional)",
 		},
 		"dob": &graphql.InputObjectFieldConfig{
-			Type:        graphql.DateTime,
+			Type:        graphql.NewNonNull(graphql.DateTime),
 			Description: "The users date of birth",
 		},
 	},
@@ -50,6 +59,21 @@ func GetQuery(controller Controller) *graphql.Object {
 		Name:        "UserQueryApi",
 		Description: "The user interaction api",
 		Fields: graphql.Fields{
+			"me": &graphql.Field{
+				Name:        "me",
+				Description: "Gets information about the currently logged in user",
+				Type:        userType,
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					token := p.Context.Value("token")
+					if token != nil {
+						tokenData := auth.ValidateToken("api", token.(string))
+						if tokenData != nil {
+							return controller.GetUser(p.Context, tokenData.Subject())
+						}
+					}
+					return nil, errors.New("invalid privileges")
+				},
+			},
 			"users": &graphql.Field{
 				Name:        "users",
 				Description: "Gets the list of active users",
@@ -106,11 +130,14 @@ func GetMutation(controller Controller) *graphql.Object {
 					if token != nil {
 						jot := auth.ValidateToken("reg", token.(string))
 						if jot != nil {
-							fmt.Printf("details: %+v\n", p.Args)
 							if details, ok := p.Args["details"].(map[string]interface{}); ok {
-								name, nameOk := details["name"].(string)
-								if !nameOk || len(name) == 0 {
-									return nil, errors.New("nameError:Name is a required field")
+								firstName, firstNameOk := details["firstName"].(string)
+								if !firstNameOk || len(strings.Trim(firstName, "\r\n\t")) == 0 {
+									return nil, errors.New("firstNameError:Name is a required field")
+								}
+								lastName, lastNameOk := details["lastName"].(string)
+								if !lastNameOk {
+									lastName = ""
 								}
 								displayName, displayNameOk := details["displayName"].(string)
 								if !displayNameOk {
@@ -120,7 +147,12 @@ func GetMutation(controller Controller) *graphql.Object {
 								if !dobOk {
 									return nil, errors.New("dobError:Invalid date of birth received")
 								}
-								return controller.Register(p.Context, name, displayName, &dob, jot)
+								if dob.After(time.Now().Add(-(13 * (time.Hour * 8760)))) {
+									return nil, errors.New("dobError:Must be at least 13 years of age to register")
+								}
+								return controller.Register(p.Context, firstName, lastName, displayName, &dob, jot)
+							} else {
+								return nil, errors.New("could not parse request")
 							}
 						}
 					}

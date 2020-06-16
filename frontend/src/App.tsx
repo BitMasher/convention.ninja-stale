@@ -14,6 +14,7 @@ import {ApolloProvider} from '@apollo/react-hooks';
 import Cookie from 'js-cookie';
 
 import ApolloClient from 'apollo-boost';
+import Cookies from "js-cookie";
 
 const client = new ApolloClient({
 	uri: '/graphql',
@@ -23,21 +24,26 @@ const client = new ApolloClient({
 // screen if you're not yet authenticated.
 // @ts-ignore
 function PrivateRoute({children, ...rest}) {
-	// TODO: update to check token validity
 	return (
 		<Route
 			{...rest}
-			render={({location}) =>
-				false ? (
-					children
-				) : (
-					<Redirect
-						to={{
-							pathname: "/login",
-							state: {from: location}
-						}}
-					/>
-				)
+			render={({location}) => {
+				const redirect = <Redirect to={{pathname: "/login"}}/>;
+				const regToken = Cookies.get('token');
+				let payload: { name: string, aud: string, exp: number } | null = null;
+				if (regToken) {
+					const [, payloadb64,] = regToken.split('.');
+					payload = JSON.parse(window.atob(payloadb64));
+				}
+				if (!payload) {
+					return redirect;
+				}
+				let exp = new Date(payload.exp * 1000);
+				if (payload.aud !== 'api' || exp < (new Date())) {
+					return redirect;
+				}
+				return children;
+			}
 			}
 		/>
 	);
