@@ -74,7 +74,7 @@ function Registration() {
 	const [displayNameValue, setDisplayNameValue] = React.useState<string>('');
 	const [tokenFirstName] = React.useState<string>(firstName);
 	const [tokenLastName] = React.useState<string>(lastName);
-	const [jwt, setJwt] = React.useState<any>(payload);
+	const [jwt] = React.useState<any>(payload);
 
 	const history = useHistory<{registration?: boolean, provider?: string}>();
 
