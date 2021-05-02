@@ -12,3 +12,4 @@ services:
             - db
         environment: 
             - PORT=3000
+            - DBCONNSTRING

@@ -1,0 +1,28 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+indent_size = 4
+indent_style = tab
+insert_final_newline = false
+max_line_length = 120
+tab_width = 4
+
+[{*.ats,*.ts}]
+indent_style = tab
+
+[{*.cjs,*.js}]
+indent_style = tab
+
+[{*.gql,*.graphql,*.graphqls}]
+indent_style = tab
+
+[{*.graphqlconfig,*.har,*.jsb2,*.jsb3,*.json,.babelrc,.eslintrc,.prettierrc,.stylelintrc,bowerrc,jest.config}]
+indent_size = 2
+
+[{*.htm,*.html,*.ng,*.sht,*.shtm,*.shtml}]
+indent_style = tab
+
+[{*.yaml,*.yml}]
+indent_size = 2

@@ -1,16 +1,21 @@
 # build front end
 FROM node:current-alpine as frontendbuilder
-WORKDIR /workspace
-COPY ./frontend/ frontend/
 WORKDIR /workspace/frontend
-RUN yarn build
+COPY ./frontend/package.json package.json
+COPY ./frontend/package-lock.json package-lock.json
+RUN npm install
+COPY ./frontend/* ./
+COPY ./frontend/public ./public
+COPY ./frontend/src ./src
+RUN npm run build
 
 # build backend
 FROM golang:alpine as backendbuilder
 WORKDIR /workspace
-COPY ./backend/ backend/
+COPY ./backend backend
 WORKDIR /workspace/backend
-RUN go build -o server --ldflags "-w -s" main.go
+RUN ls
+RUN go build -o server --ldflags "-w -s"
 
 # execution environment
 FROM alpine:latest
