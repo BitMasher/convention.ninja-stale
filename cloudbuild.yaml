@@ -1,12 +1,17 @@
 steps:
     - name: 'node:current-alpine'
       dir: 'frontend'
-      entrypoint: 'yarn'
-      args: ['build', '--production=true']
+      entrypoint: 'npm'
+      args: ['install']
+    - name: 'node:current-alpine'
+      dir: 'frontend'
+      entrypoint: 'npm'
+      args: ['run', 'build', '--production=true']
     - name: 'bash'
-      args: ['mv', 'frontend/build/*', 'backend/static']
+      args: ['mv', 'frontend/build', 'backend/static']
     - name: 'bash'
       args: ['mv', 'appengine.yaml', 'backend/appengine.yaml']
     - name: 'gcr.io/cloud-builders/gcloud'
       dir: 'backend'
+      entrypoint: 'gcloud'
       args: ['app', 'deploy', 'appengine.yaml']

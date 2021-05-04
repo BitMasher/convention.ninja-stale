@@ -1,0 +1,11 @@
+steps:
+    - name: 'node:current-alpine'
+      dir: 'frontend'
+      entrypoint: 'npm'
+      args: ['install']
+    - name: 'node:current-alpine'
+      dir: 'frontend'
+      entrypoint: 'npm'
+      args: ['run', 'build', '--production=true']
+    - name: 'bash'
+      args: ['mv', 'appengine.yaml', 'backend/appengine.yaml']
