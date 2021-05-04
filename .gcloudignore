@@ -1,0 +1,8 @@
+.gcloudignore
+.git
+.gitignore
+frontend/node_modules
+.idea
+frontend/.idea
+backend/.idea
+frontend/build

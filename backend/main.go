@@ -1,7 +1,6 @@
 package main
 
 import (
-    "database/sql"
     "fmt"
     "github.com/gorilla/mux"
     "github.com/graphql-go/graphql"
@@ -47,11 +46,11 @@ func main() {
     }
 
     // TODO: provide proper feedback for invalid database connection strings
-    if len(config.DbConnString) == 0 {
+    /*if len(config.DbConnString) == 0 {
         panic("Invalid database connection string provided")
-    }
+    }*/
 
-    db, err := sql.Open("postgres", config.DbConnString)
+    /*db, err := sql.Open("postgres", config.DbConnString)
     // TODO: provide better feedback on sql init failure
     if err != nil {
         log.Print(err)
@@ -63,7 +62,7 @@ func main() {
     if err != nil {
         log.Print(err)
         panic("Failed to connect to database")
-    }
+    }*/
 
     /*userController := users.Controller{Repo: users.Repo{DB: db}}
     userQueryGql := users.GetQuery(userController)
