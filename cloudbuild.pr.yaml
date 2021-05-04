@@ -7,5 +7,6 @@ steps:
       dir: 'frontend'
       entrypoint: 'npm'
       args: ['run', 'build', '--production=true']
-    - name: 'bash'
-      args: ['mv', 'appengine.yaml', 'backend/appengine.yaml']
+    - name: 'golang'
+      dir: 'backend'
+      args: ['go', 'build', '.']
