@@ -1,5 +1,7 @@
 # build front end
 FROM node:current-alpine as frontendbuilder
+ARG REACT_APP_FIREBASE_API_KEY
+ARG REACT_APP_FIREBASE_AUTH_DOMAIN
 WORKDIR /workspace/frontend
 COPY ./frontend/package.json package.json
 COPY ./frontend/package-lock.json package-lock.json

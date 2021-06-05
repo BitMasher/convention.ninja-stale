@@ -1,0 +1,40 @@
+schema {
+    query: Query
+    mutation: Mutation
+}
+
+type Query {
+    me: User
+    user(id:ID): User
+}
+
+type Mutation {
+    newUser(input: NewUserInput!): User
+}
+
+type User {
+    id: ID!
+    firstName: String
+    lastName: String
+    displayName: String!
+    pronoun: String!
+    dob: DateTime
+    tosAgreement: DateTime
+    contacts: [Contact!]
+}
+
+type Contact {
+    id: ID!
+    contactType: String!
+    value: String!
+}
+
+scalar DateTime
+
+input NewUserInput {
+    firstName: String!
+    lastName: String!
+    displayName: String
+    pronoun: Int!
+    tosAgreement: Boolean!
+}

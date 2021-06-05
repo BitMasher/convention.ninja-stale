@@ -1,12 +1,13 @@
+import { Container } from '@material-ui/core';
 import React from 'react';
 import './App.css';
 import SignIn from "./pages/SignIn";
 
 function App() {
 	return (
-		<div className="App">
+		<Container>
 			<SignIn></SignIn>
-		</div>
+		</Container>
 	);
 }
 

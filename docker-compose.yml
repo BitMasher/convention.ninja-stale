@@ -5,7 +5,11 @@ services:
         environment: 
             - POSTGRES_PASSWORD
     server:
-        build: .
+        build:
+            context: .
+            args: 
+                - REACT_APP_FIREBASE_API_KEY=$REACT_APP_FIREBASE_API_KEY
+                - REACT_APP_FIREBASE_AUTH_DOMAIN=$REACT_APP_FIREBASE_AUTH_DOMAIN
         ports:
             - "3000:3000"
         links:
