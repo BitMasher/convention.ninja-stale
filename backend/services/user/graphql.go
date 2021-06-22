@@ -81,6 +81,13 @@ func GetQuery() *graphql.Object {
         Name:        "UserQueryApi",
         Description: "The API for querying user details",
         Fields: graphql.Fields{
+            "accessToken": &graphql.Field {
+                Name: "accessToken",
+                Type: graphql.String,
+                Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+                    return nil, errors.New("not implemented")
+                },
+            },
             "me": &graphql.Field{
                 Name: "me",
                 Type: userType,

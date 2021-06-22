@@ -28,9 +28,10 @@ function SignIn() {
 				result.user?.getIdToken(false).then((token) => {
 					console.log(token);
 				})
-			}).catch((err) => {
+			})
+			.catch((err) => {
 				console.log(err);
-		})
+			})
 	}
 
 	return (

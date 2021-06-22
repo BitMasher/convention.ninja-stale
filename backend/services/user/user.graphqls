@@ -4,6 +4,7 @@ schema {
 }
 
 type Query {
+    accessToken: String!
     me: User
     user(id:ID): User
 }
