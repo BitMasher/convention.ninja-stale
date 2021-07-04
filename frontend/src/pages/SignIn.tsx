@@ -9,6 +9,7 @@ import {
 	ListItemText,
 	makeStyles
 } from "@material-ui/core";
+import {gql, useLazyQuery} from '@apollo/client';
 import firebase from "firebase";
 
 const useStyles = makeStyles({
@@ -18,15 +19,27 @@ const useStyles = makeStyles({
 	}
 })
 
+const GET_ACCESS_TOKEN = gql`
+	query get_access_token {
+		users {
+			accessToken
+		}
+	}
+`;
+
 function SignIn() {
 	const classes = useStyles();
+	const [getAccessToken, {loading, data}] = useLazyQuery(GET_ACCESS_TOKEN);
+
+	console.log(data)
 
 	const handleGoogleAuth = () => {
 		const provider = new firebase.auth.GoogleAuthProvider();
 		firebase.auth().signInWithPopup(provider)
 			.then((result) => {
 				result.user?.getIdToken(false).then((token) => {
-					console.log(token);
+					localStorage.setItem('id_token', token);
+					getAccessToken()
 				})
 			})
 			.catch((err) => {

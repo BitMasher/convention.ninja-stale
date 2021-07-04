@@ -19,3 +19,6 @@ services:
         environment: 
             - PORT=3000
             - DBCONNSTRING
+            - KEYPATH
+            - DBMAXCONN=5
+            - GOOGLE_CLOUD_PROJECT

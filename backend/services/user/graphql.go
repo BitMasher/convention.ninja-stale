@@ -2,6 +2,7 @@ package user
 
 import (
     "errors"
+    "firebase.google.com/go/auth"
     "fmt"
     "github.com/graphql-go/graphql"
 )
@@ -76,7 +77,11 @@ var newUserInput = graphql.NewInputObject(graphql.InputObjectConfig{
     },
 })
 
-func GetQuery() *graphql.Object {
+type UserGql struct {
+    Controller *Controller
+}
+
+func (t *UserGql) GetQuery() *graphql.Object {
     userSchema := graphql.NewObject(graphql.ObjectConfig{
         Name:        "UserQueryApi",
         Description: "The API for querying user details",
@@ -85,7 +90,11 @@ func GetQuery() *graphql.Object {
                 Name: "accessToken",
                 Type: graphql.String,
                 Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-                    return nil, errors.New("not implemented")
+                    idToken, ok := p.Context.Value("idtoken").(*auth.Token)
+                    if !ok {
+                        return nil, errors.New("unauthorized")
+                    }
+                    return t.Controller.GetAccessToken(p.Context, idToken)
                 },
             },
             "me": &graphql.Field{
@@ -111,7 +120,7 @@ func GetQuery() *graphql.Object {
     return userSchema
 }
 
-func GetMutation() *graphql.Object {
+func (t *UserGql) GetMutation() *graphql.Object {
     userSchema := graphql.NewObject(graphql.ObjectConfig{
         Name:        "UserMutationApi",
         Description: "The API for mutating a user",

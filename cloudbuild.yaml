@@ -7,6 +7,13 @@ steps:
       dir: 'frontend'
       entrypoint: 'npm'
       args: ['run', 'build', '--production=true']
+      env:
+      - 'REACT_APP_FIREBASE_AUTH_DOMAIN=$REACT_APP_FIREBASE_AUTH_DOMAIN'
+    - name: 'gcr.io/google-appengine/exec-wrapper'
+      args: [
+        '-i', 'migrate/migrate', 
+        '-s', '$_CLOUD_SQL_INSTANCE_NAME', '--', 
+        '-path=./backend/dbmigrations/', '-database', 'postgres://$$PSQL_AUTH@localhost:5432/$_PSQL_DATABASE?sslmode=disable', 'up']
     - name: 'bash'
       args: ['mv', 'frontend/build', 'backend/static']
     - name: 'bash'
@@ -15,3 +22,9 @@ steps:
       dir: 'backend'
       entrypoint: 'gcloud'
       args: ['app', 'deploy', 'appengine.yaml']
+availableSecrets:
+  secretManager:
+  - versionName: projects/$PROJECT_ID/secrets/migrations_auth/$_PSQL_SECRET_VERSION
+    env: PSQL_AUTH
+  - versionName: projects/$PROJECT_ID/secrets/firebase_api_key/$_FIREBASE_SECRET_VERSION
+    env: REACT_APP_FIREBASE_API_KEY

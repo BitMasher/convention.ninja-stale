@@ -44,18 +44,17 @@ func (m *SigningMethodKmsRsaPss) Verify(raw []byte, signature crypto.Signature, 
 // For this signing method, key must be an *rsa.PrivateKey.
 func (m *SigningMethodKmsRsaPss) Sign(raw []byte, key interface{}) (crypto.Signature, error) {
     ctx := context.Background()
-    c, err := kms.NewKeyManagementClient(ctx)
+    client, err := kms.NewKeyManagementClient(ctx)
     if err != nil {
         return nil, errors.New("kms failure")
     }
-    defer c.Close()
+    defer client.Close()
     
     if req, ok := key.(kmspb.AsymmetricSignRequest); ok {
-        resp, err := c.AsymmetricSign(ctx, &req)
+        resp, err := client.AsymmetricSign(ctx, &req)
         if err != nil {
             return nil, err
         }
-
         return resp.Signature, nil
     } else {
         return nil, crypto.ErrNotRSAPrivateKey
